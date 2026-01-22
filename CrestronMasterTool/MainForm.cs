@@ -377,7 +377,7 @@ namespace CrestronMasterTool
             try
             {
                 var entries = await Task.Run(() => sftpClient!.ListDirectory(folderPath));
-                var files = entries.Where(e => !e.IsDirectory && (e.Name.EndsWith(".exe") || e.Name.EndsWith(".bin")))
+                var files = entries.Where(e => !e.IsDirectory && (e.Name.EndsWith(".exe") || e.Name.EndsWith(".bin") || e.Name.EndsWith(".puf")))
                                    .OrderByDescending(e => e.Name)
                                    .ToList();
 
@@ -411,8 +411,13 @@ namespace CrestronMasterTool
 
         private string ExtractVersion(string filename)
         {
-            // Extract version pattern like 228.35.001.00 from crestron_database_228.35.001.00.exe
+            // Extract version pattern like 228.35.001.00 or 1.8001.0295 from filename
             var match = System.Text.RegularExpressions.Regex.Match(filename, @"(\d+\.\d+\.\d+\.\d+)");
+            if (match.Success)
+                return match.Groups[1].Value;
+
+            // Try 3-part version like 1.8001.0295
+            match = System.Text.RegularExpressions.Regex.Match(filename, @"(\d+\.\d+\.\d+)");
             if (match.Success)
                 return match.Groups[1].Value;
 
@@ -421,7 +426,7 @@ namespace CrestronMasterTool
             if (match.Success)
                 return match.Groups[1].Value.Replace('_', '.').Replace('-', '.');
 
-            return filename.Replace(".exe", "").Replace(".bin", "");
+            return filename.Replace(".exe", "").Replace(".bin", "").Replace(".puf", "");
         }
 
         private static string FormatSize(long bytes)

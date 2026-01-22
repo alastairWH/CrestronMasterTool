@@ -359,6 +359,9 @@ namespace CrestronMasterTool
         {
             if (sftpClient != null && sftpClient.IsConnected && ((RadioButton)sender!).Checked)
             {
+                // Hide Install button for firmware, show for software
+                btnInstall.Visible = rbSoftware.Checked;
+                
                 await LoadProductListAsync();
             }
         }

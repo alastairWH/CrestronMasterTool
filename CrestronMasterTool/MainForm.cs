@@ -18,14 +18,17 @@ namespace CrestronMasterTool
         private Panel? mainPanel;
         private SftpClient? sftpClient;
         private RadioButton? rbSoftware, rbFirmware;
-        private ComboBox? cmbProduct, cmbVersion;
-        private Label? lblProduct, lblVersion;
-        private Button? btnDownload, btnInstall, btnBack, btnCancel;
+        private TextBox? txtSearch;
+        private ListView? lvProducts;
+        private Button? btnDownloadSelected, btnInstallSelected, btnBack, btnCancel;
         private ProgressBar? downloadProgress;
         private Label? lblMainStatus, lblFileSize;
         private System.Threading.CancellationTokenSource? cancelTokenSource;
         private Dictionary<string, List<string>> productFiles = new Dictionary<string, List<string>>();
         private Dictionary<string, string> productDisplayNames = new Dictionary<string, string>();
+        private Dictionary<string, Dictionary<string, string>> productVersions = new Dictionary<string, Dictionary<string, string>>();
+        private List<string> downloadQueue = new List<string>();
+        private List<ListViewItem> allProductItems = new List<ListViewItem>();
 
         public MainForm()
         {
@@ -35,8 +38,8 @@ namespace CrestronMasterTool
         private void InitializeComponent()
         {
             this.Text = "Crestron Master Tool";
-            this.Width = 500;
-            this.Height = 380;
+            this.Width = 700;
+            this.Height = 550;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -117,48 +120,64 @@ namespace CrestronMasterTool
             rbFirmware = new RadioButton { Text = "Firmware", Left = 250, Top = 25, Width = 100 };
             rbFirmware.CheckedChanged += RbType_CheckedChanged;
 
-            lblProduct = new Label { Text = "Product:", Left = 30, Top = 65, Width = 100, Font = new System.Drawing.Font("Segoe UI", 9) };
-            cmbProduct = new ComboBox { Left = 140, Top = 63, Width = 280, DropDownStyle = ComboBoxStyle.DropDownList };
-            cmbProduct.SelectedIndexChanged += CmbProduct_SelectedIndexChanged;
+            var lblSearch = new Label { Text = "Search:", Left = 30, Top = 65, Width = 60, Font = new System.Drawing.Font("Segoe UI", 9) };
+            txtSearch = new TextBox { Left = 95, Top = 63, Width = 550, Font = new System.Drawing.Font("Segoe UI", 9) };
+            txtSearch.TextChanged += TxtSearch_TextChanged;
+            try { txtSearch.PlaceholderText = "Type to filter products..."; } catch { }
 
-            lblVersion = new Label { Text = "Version:", Left = 30, Top = 105, Width = 100, Font = new System.Drawing.Font("Segoe UI", 9) };
-            cmbVersion = new ComboBox { Left = 140, Top = 103, Width = 280, DropDownStyle = ComboBoxStyle.DropDownList };
-
-            btnDownload = new Button
+            lvProducts = new ListView
             {
-                Text = "Download",
-                Left = 140,
-                Top = 155,
-                Width = 130,
+                Left = 30,
+                Top = 95,
+                Width = 620,
+                Height = 280,
+                View = View.Details,
+                FullRowSelect = true,
+                CheckBoxes = true,
+                GridLines = true,
+                Font = new System.Drawing.Font("Segoe UI", 9)
+            };
+            lvProducts.Columns.Add("Product", 350);
+            lvProducts.Columns.Add("Version", 200);
+            lvProducts.Columns.Add("Status", 70);
+            lvProducts.ItemChecked += LvProducts_ItemChecked;
+            lvProducts.MouseClick += LvProducts_MouseClick;
+
+            btnDownloadSelected = new Button
+            {
+                Text = "Download Selected",
+                Left = 30,
+                Top = 390,
+                Width = 150,
                 Height = 35,
                 BackColor = System.Drawing.Color.FromArgb(0, 120, 215),
                 ForeColor = System.Drawing.Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Font = new System.Drawing.Font("Segoe UI", 10)
             };
-            btnDownload.Click += BtnDownload_Click;
+            btnDownloadSelected.Click += BtnDownloadSelected_Click;
 
-            btnInstall = new Button
+            btnInstallSelected = new Button
             {
-                Text = "Install (Silent)",
-                Left = 280,
-                Top = 155,
-                Width = 140,
+                Text = "Install Selected",
+                Left = 190,
+                Top = 390,
+                Width = 150,
                 Height = 35,
                 BackColor = System.Drawing.Color.FromArgb(16, 137, 62),
                 ForeColor = System.Drawing.Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Font = new System.Drawing.Font("Segoe UI", 10)
             };
-            btnInstall.Click += BtnInstall_Click;
+            btnInstallSelected.Click += BtnInstallSelected_Click;
 
             btnCancel = new Button
             {
                 Text = "Cancel",
-                Left = 200,
-                Top = 200,
-                Width = 80,
-                Height = 25,
+                Left = 350,
+                Top = 390,
+                Width = 100,
+                Height = 35,
                 BackColor = System.Drawing.Color.FromArgb(200, 0, 0),
                 ForeColor = System.Drawing.Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -167,14 +186,14 @@ namespace CrestronMasterTool
             };
             btnCancel.Click += BtnCancel_Click;
 
-            downloadProgress = new ProgressBar { Left = 30, Top = 240, Width = 390, Height = 20, Minimum = 0, Maximum = 100, Value = 0 };
+            downloadProgress = new ProgressBar { Left = 30, Top = 435, Width = 620, Height = 20, Minimum = 0, Maximum = 100, Value = 0 };
 
             lblFileSize = new Label
             {
                 Text = "",
                 Left = 30,
-                Top = 265,
-                Width = 390,
+                Top = 460,
+                Width = 620,
                 ForeColor = System.Drawing.Color.Gray,
                 Font = new System.Drawing.Font("Segoe UI", 8)
             };
@@ -183,8 +202,8 @@ namespace CrestronMasterTool
             {
                 Text = "",
                 Left = 30,
-                Top = 285,
-                Width = 390,
+                Top = 480,
+                Width = 620,
                 Height = 40,
                 ForeColor = System.Drawing.Color.DarkBlue,
                 Font = new System.Drawing.Font("Segoe UI", 9)
@@ -194,7 +213,7 @@ namespace CrestronMasterTool
             {
                 Text = "← Logout",
                 Left = 30,
-                Top = 330,
+                Top = 520,
                 Width = 100,
                 Height = 25,
                 FlatStyle = FlatStyle.Flat,
@@ -205,12 +224,11 @@ namespace CrestronMasterTool
             mainPanel.Controls.Add(lblTypeTitle);
             mainPanel.Controls.Add(rbSoftware);
             mainPanel.Controls.Add(rbFirmware);
-            mainPanel.Controls.Add(lblProduct);
-            mainPanel.Controls.Add(cmbProduct);
-            mainPanel.Controls.Add(lblVersion);
-            mainPanel.Controls.Add(cmbVersion);
-            mainPanel.Controls.Add(btnDownload);
-            mainPanel.Controls.Add(btnInstall);
+            mainPanel.Controls.Add(lblSearch);
+            mainPanel.Controls.Add(txtSearch);
+            mainPanel.Controls.Add(lvProducts);
+            mainPanel.Controls.Add(btnDownloadSelected);
+            mainPanel.Controls.Add(btnInstallSelected);
             mainPanel.Controls.Add(btnCancel);
             mainPanel.Controls.Add(downloadProgress);
             mainPanel.Controls.Add(lblFileSize);
@@ -289,10 +307,11 @@ namespace CrestronMasterTool
 
         private async Task LoadProductListAsync()
         {
-            cmbProduct!.Items.Clear();
-            cmbVersion!.Items.Clear();
+            lvProducts!.Items.Clear();
             productFiles.Clear();
             productDisplayNames.Clear();
+            productVersions.Clear();
+            allProductItems.Clear();
 
             string folderPath = rbSoftware!.Checked ? "/software" : "/firmware";
             lblMainStatus!.Text = "Loading products...";
@@ -306,12 +325,21 @@ namespace CrestronMasterTool
                 {
                     string displayName = FormatProductName(product.Name);
                     productDisplayNames[displayName] = product.Name;
-                    cmbProduct.Items.Add(displayName);
+                    
+                    // Don't load versions upfront - do it on demand when user clicks
+                    
+                    // Add to ListView
+                    var item = new ListViewItem(displayName);
+                    item.SubItems.Add("(Select version) ▼");
+                    item.SubItems.Add("");
+                    item.Tag = displayName;
+                    allProductItems.Add(item);
+                    lvProducts.Items.Add(item);
                 }
 
-                if (cmbProduct.Items.Count > 0)
+                if (lvProducts.Items.Count > 0)
                 {
-                    lblMainStatus.Text = $"Found {cmbProduct.Items.Count} products.";
+                    lblMainStatus.Text = $"Found {lvProducts.Items.Count} products. Check items and select versions to download.";
                 }
                 else
                 {
@@ -322,6 +350,124 @@ namespace CrestronMasterTool
             {
                 lblMainStatus.Text = "Failed to load products: " + ex.Message;
             }
+        }
+
+        private async Task LoadVersionsForProduct(string displayName, string productName, string basePath)
+        {
+            try
+            {
+                string folderPath = basePath + "/" + productName;
+                var entries = await Task.Run(() => sftpClient!.ListDirectory(folderPath));
+                var files = entries.Where(e => !e.IsDirectory && (e.Name.EndsWith(".exe") || e.Name.EndsWith(".bin") || e.Name.EndsWith(".puf")))
+                                   .OrderByDescending(e => e.Name)
+                                   .ToList();
+
+                if (!productFiles.ContainsKey(displayName))
+                    productFiles[displayName] = new List<string>();
+                
+                if (!productVersions.ContainsKey(displayName))
+                    productVersions[displayName] = new Dictionary<string, string>();
+
+                productFiles[displayName].Clear();
+                productVersions[displayName].Clear();
+
+                foreach (var file in files)
+                {
+                    productFiles[displayName].Add(file.FullName);
+                    string versionDisplay = ExtractVersion(file.Name) + " (" + file.Name + ")";
+                    productVersions[displayName][versionDisplay] = file.FullName;
+                }
+            }
+            catch
+            {
+                // Ignore errors for individual products
+            }
+        }
+
+        private void TxtSearch_TextChanged(object? sender, EventArgs e)
+        {
+            string searchText = txtSearch!.Text.ToLower().Trim();
+            
+            lvProducts!.BeginUpdate();
+            lvProducts.Items.Clear();
+            
+            foreach (ListViewItem item in allProductItems)
+            {
+                string productName = item.Text.ToLower();
+                
+                if (string.IsNullOrEmpty(searchText) || productName.Contains(searchText))
+                {
+                    lvProducts.Items.Add(item);
+                }
+            }
+            
+            lvProducts.EndUpdate();
+        }
+
+        private void LvProducts_ItemChecked(object? sender, ItemCheckedEventArgs e)
+        {
+            // When an item is checked, show a context menu or inline dropdown for version selection
+            if (e.Item.Checked && e.Item.SubItems[1].Text.Contains("(Select version)"))
+            {
+                ShowVersionSelector(e.Item);
+            }
+        }
+
+        private void LvProducts_MouseClick(object? sender, MouseEventArgs e)
+        {
+            // When user clicks on the version column, show the dropdown
+            var info = lvProducts!.HitTest(e.X, e.Y);
+            if (info.Item != null && info.SubItem != null)
+            {
+                int subItemIndex = info.Item.SubItems.IndexOf(info.SubItem);
+                
+                // If clicked on the Version column (index 1)
+                if (subItemIndex == 1)
+                {
+                    ShowVersionSelector(info.Item);
+                }
+            }
+        }
+
+        private async void ShowVersionSelector(ListViewItem item)
+        {
+            string productName = (string)item.Tag!;
+            
+            // Load versions on demand if not already loaded
+            if (!productVersions.ContainsKey(productName) || productVersions[productName].Count == 0)
+            {
+                string basePath = rbSoftware!.Checked ? "/software" : "/firmware";
+                string rawProductName = productDisplayNames[productName];
+                
+                lblMainStatus!.Text = "Loading versions for " + productName + "...";
+                await LoadVersionsForProduct(productName, rawProductName, basePath);
+                lblMainStatus.Text = "";
+            }
+            
+            if (!productVersions.ContainsKey(productName) || productVersions[productName].Count == 0)
+            {
+                item.SubItems[1].Text = "No versions available";
+                item.Checked = false;
+                return;
+            }
+
+            // Create a context menu to select version
+            var menu = new ContextMenuStrip();
+            
+            foreach (var version in productVersions[productName].Keys)
+            {
+                var menuItem = new ToolStripMenuItem(version);
+                menuItem.Click += (s, ev) =>
+                {
+                    item.SubItems[1].Text = version + " ▼";
+                    item.SubItems[2].Text = "Ready";
+                };
+                menu.Items.Add(menuItem);
+            }
+            
+            // Show the menu at the ListView position
+            var rect = item.SubItems[1].Bounds;
+            menu.Show(lvProducts!, rect.Left, rect.Bottom);
         }
 
         private string FormatProductName(string name)
@@ -347,55 +493,9 @@ namespace CrestronMasterTool
             if (sftpClient != null && sftpClient.IsConnected && ((RadioButton)sender!).Checked)
             {
                 // Hide Install button for firmware, show for software
-                btnInstall!.Visible = rbSoftware!.Checked;
+                btnInstallSelected!.Visible = rbSoftware!.Checked;
                 
                 await LoadProductListAsync();
-            }
-        }
-
-        private async void CmbProduct_SelectedIndexChanged(object? sender, EventArgs e)
-        {
-            if (cmbProduct!.SelectedItem == null) return;
-
-            cmbVersion!.Items.Clear();
-            string displayName = cmbProduct.SelectedItem.ToString()!;
-            string productName = productDisplayNames[displayName];
-            string folderPath = (rbSoftware!.Checked ? "/software/" : "/firmware/") + productName;
-
-            lblMainStatus!.Text = "Loading versions for " + displayName + "...";
-
-            try
-            {
-                var entries = await Task.Run(() => sftpClient!.ListDirectory(folderPath));
-                var files = entries.Where(e => !e.IsDirectory && (e.Name.EndsWith(".exe") || e.Name.EndsWith(".bin") || e.Name.EndsWith(".puf")))
-                                   .OrderByDescending(e => e.Name)
-                                   .ToList();
-
-                if (!productFiles.ContainsKey(displayName))
-                    productFiles[displayName] = new List<string>();
-
-                productFiles[displayName].Clear();
-
-                foreach (var file in files)
-                {
-                    productFiles[displayName].Add(file.FullName);
-                    string version = ExtractVersion(file.Name);
-                    cmbVersion.Items.Add(version + " (" + file.Name + ")");
-                }
-
-                if (cmbVersion.Items.Count > 0)
-                {
-                    cmbVersion.SelectedIndex = 0;
-                    lblMainStatus.Text = $"Found {cmbVersion.Items.Count} versions for {displayName}.";
-                }
-                else
-                {
-                    lblMainStatus.Text = "No files found for " + displayName;
-                }
-            }
-            catch (Exception ex)
-            {
-                lblMainStatus.Text = "Failed to load versions: " + ex.Message;
             }
         }
 
@@ -429,7 +529,7 @@ namespace CrestronMasterTool
             return b + " B";
         }
 
-        private async void BtnDownload_Click(object? sender, EventArgs e)
+        private async void BtnDownloadSelected_Click(object? sender, EventArgs e)
         {
             if (sftpClient == null || !sftpClient.IsConnected)
             {
@@ -437,91 +537,126 @@ namespace CrestronMasterTool
                 return;
             }
 
-            if (cmbProduct!.SelectedItem == null || cmbVersion!.SelectedIndex < 0)
+            // Get all checked items with selected versions
+            var itemsToDownload = new List<(ListViewItem item, string remotePath, string fileName)>();
+            
+            foreach (ListViewItem item in lvProducts!.Items)
             {
-                lblMainStatus!.Text = "Please select a product and version.";
+                if (item.Checked && item.SubItems[1].Text != "(Select version)" && item.SubItems[1].Text != "No versions available")
+                {
+                    string productName = (string)item.Tag!;
+                    string versionDisplay = item.SubItems[1].Text;
+                    
+                    if (productVersions.ContainsKey(productName) && productVersions[productName].ContainsKey(versionDisplay))
+                    {
+                        string remotePath = productVersions[productName][versionDisplay];
+                        string fileName = Path.GetFileName(remotePath);
+                        itemsToDownload.Add((item, remotePath, fileName));
+                    }
+                }
+            }
+
+            if (itemsToDownload.Count == 0)
+            {
+                lblMainStatus!.Text = "Please check items and select versions to download.";
                 return;
             }
 
-            string productName = cmbProduct.SelectedItem.ToString()!;
-            string remotePath = productFiles[productName][cmbVersion!.SelectedIndex];
-            string fileName = Path.GetFileName(remotePath);
-            string localFile = Path.Combine(Path.GetTempPath(), fileName);
-
-            btnDownload!.Enabled = false;
-            btnInstall!.Enabled = false;
+            btnDownloadSelected!.Enabled = false;
+            btnInstallSelected!.Enabled = false;
             btnCancel!.Visible = true;
-            downloadProgress!.Value = 0;
-            lblFileSize!.Text = "";
 
             cancelTokenSource?.Cancel();
             cancelTokenSource = new System.Threading.CancellationTokenSource();
             var token = cancelTokenSource.Token;
 
-            lblMainStatus!.Text = "Downloading " + fileName + " ...";
+            lblMainStatus!.Text = $"Downloading {itemsToDownload.Count} file(s)...";
 
-            try
+            int completed = 0;
+            foreach (var (item, remotePath, fileName) in itemsToDownload)
             {
-                var startTime = DateTime.Now;
-                await Task.Run(() =>
+                if (token.IsCancellationRequested) break;
+
+                item.SubItems[2].Text = "Downloading...";
+                item.BackColor = System.Drawing.Color.LightYellow;
+
+                string downloadsFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                downloadsFolder = Path.Combine(downloadsFolder, "Downloads");
+                if (!Directory.Exists(downloadsFolder))
+                    Directory.CreateDirectory(downloadsFolder);
+                string localFile = Path.Combine(downloadsFolder, fileName);
+
+                try
                 {
-                    using var remote = sftpClient.OpenRead(remotePath);
-                    using var local = File.OpenWrite(localFile);
-                    var buffer = new byte[64 * 1024];
-                    ulong totalRead = 0;
-                    long fileSize = remote.Length;
-                    int read;
-                    
-                    while ((read = remote.Read(buffer, 0, buffer.Length)) > 0)
+                    var startTime = DateTime.Now;
+                    await Task.Run(() =>
                     {
-                        if (token.IsCancellationRequested)
-                        {
-                            local.Close();
-                            File.Delete(localFile);
-                            return;
-                        }
-
-                        local.Write(buffer, 0, read);
-                        totalRead += (ulong)read;
+                        using var remote = sftpClient!.OpenRead(remotePath);
+                        using var local = File.OpenWrite(localFile);
+                        var buffer = new byte[64 * 1024];
+                        ulong totalRead = 0;
+                        long fileSize = remote.Length;
+                        int read;
                         
-                        if (fileSize > 0)
+                        while ((read = remote.Read(buffer, 0, buffer.Length)) > 0)
                         {
-                            int percent = (int)(totalRead * 100 / (ulong)fileSize);
-                            var elapsed = DateTime.Now - startTime;
-                            double speed = totalRead / elapsed.TotalSeconds;
-                            double remaining = (fileSize - (long)totalRead) / speed;
-                            
-                            this.Invoke(() =>
+                            if (token.IsCancellationRequested)
                             {
-                                downloadProgress.Value = Math.Min(100, percent);
-                                lblFileSize.Text = $"{FormatSize((long)totalRead)} / {FormatSize(fileSize)} ({FormatSpeed(speed)}) - ETA: {FormatTime(remaining)}";
-                            });
-                        }
-                    }
-                }, token);
+                                local.Close();
+                                File.Delete(localFile);
+                                return;
+                            }
 
-                if (!token.IsCancellationRequested)
-                {
-                    downloadProgress.Value = 100;
-                    lblMainStatus.Text = "✓ Downloaded to: " + localFile;
+                            local.Write(buffer, 0, read);
+                            totalRead += (ulong)read;
+                            
+                            if (fileSize > 0)
+                            {
+                                int percent = (int)(totalRead * 100 / (ulong)fileSize);
+                                var elapsed = DateTime.Now - startTime;
+                                double speed = totalRead / elapsed.TotalSeconds;
+                                double remaining = (fileSize - (long)totalRead) / speed;
+                                
+                                this.Invoke(() =>
+                                {
+                                    downloadProgress!.Value = Math.Min(100, percent);
+                                    lblFileSize!.Text = $"[{completed + 1}/{itemsToDownload.Count}] {fileName}: {FormatSize((long)totalRead)} / {FormatSize(fileSize)} ({FormatSpeed(speed)}) - ETA: {FormatTime(remaining)}";
+                                });
+                            }
+                        }
+                    }, token);
+
+                    if (!token.IsCancellationRequested)
+                    {
+                        item.SubItems[2].Text = "✓ Done";
+                        item.BackColor = System.Drawing.Color.LightGreen;
+                        completed++;
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    lblMainStatus.Text = "Download cancelled.";
-                    lblFileSize.Text = "";
+                    item.SubItems[2].Text = "✗ Failed";
+                    item.BackColor = System.Drawing.Color.LightCoral;
+                    lblMainStatus.Text = $"Error downloading {fileName}: " + ex.Message;
                 }
             }
-            catch (Exception ex)
+
+            downloadProgress!.Value = 0;
+            
+            if (!token.IsCancellationRequested)
             {
-                lblMainStatus.Text = "Download failed: " + ex.Message;
-                lblFileSize.Text = "";
+                lblMainStatus!.Text = $"✓ Downloaded {completed} of {itemsToDownload.Count} file(s) to Downloads folder.";
+                lblFileSize!.Text = "";
             }
-            finally
+            else
             {
-                btnDownload.Enabled = true;
-                btnInstall.Enabled = true;
-                btnCancel.Visible = false;
+                lblMainStatus!.Text = "Download cancelled.";
+                lblFileSize!.Text = "";
             }
+
+            btnDownloadSelected.Enabled = true;
+            btnInstallSelected.Enabled = true;
+            btnCancel.Visible = false;
         }
 
         private void BtnCancel_Click(object? sender, EventArgs e)
@@ -545,44 +680,67 @@ namespace CrestronMasterTool
             return $"{(int)seconds}s";
         }
 
-        private void BtnInstall_Click(object? sender, EventArgs e)
+        private void BtnInstallSelected_Click(object? sender, EventArgs e)
         {
-            if (cmbProduct!.SelectedItem == null || cmbVersion!.SelectedIndex < 0)
+            string downloadsFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            downloadsFolder = Path.Combine(downloadsFolder, "Downloads");
+
+            // Get all checked items that have been downloaded
+            var itemsToInstall = new List<(string fileName, string localFile)>();
+            
+            foreach (ListViewItem item in lvProducts!.Items)
             {
-                lblMainStatus!.Text = "Please select a product and version first.";
-                return;
-            }
-
-            string productName = cmbProduct.SelectedItem.ToString()!;
-            string remotePath = productFiles[productName][cmbVersion!.SelectedIndex];
-            string fileName = Path.GetFileName(remotePath);
-            string localFile = Path.Combine(Path.GetTempPath(), fileName);
-
-            if (!File.Exists(localFile))
-            {
-                lblMainStatus!.Text = "File not downloaded yet. Please download first.";
-                return;
-            }
-
-            lblMainStatus!.Text = "Starting silent install for " + fileName + " ...";
-
-            try
-            {
-                var startInfo = new System.Diagnostics.ProcessStartInfo
+                if (item.Checked && item.SubItems[2].Text == "✓ Done")
                 {
-                    FileName = localFile,
-                    Arguments = "/quiet /norestart",
-                    UseShellExecute = true,
-                    Verb = "runas" // Run as admin
-                };
+                    string productName = (string)item.Tag!;
+                    string versionDisplay = item.SubItems[1].Text;
+                    
+                    if (productVersions.ContainsKey(productName) && productVersions[productName].ContainsKey(versionDisplay))
+                    {
+                        string remotePath = productVersions[productName][versionDisplay];
+                        string fileName = Path.GetFileName(remotePath);
+                        string localFile = Path.Combine(downloadsFolder, fileName);
+                        
+                        if (File.Exists(localFile))
+                        {
+                            itemsToInstall.Add((fileName, localFile));
+                        }
+                    }
+                }
+            }
 
-                var process = System.Diagnostics.Process.Start(startInfo);
-                lblMainStatus.Text = "✓ Install started for " + fileName;
-            }
-            catch (Exception ex)
+            if (itemsToInstall.Count == 0)
             {
-                lblMainStatus.Text = "Install failed: " + ex.Message;
+                lblMainStatus!.Text = "No downloaded files selected for installation. Please download first.";
+                return;
             }
+
+            lblMainStatus!.Text = $"Starting installation for {itemsToInstall.Count} file(s)...";
+
+            int installed = 0;
+            foreach (var (fileName, localFile) in itemsToInstall)
+            {
+                try
+                {
+                    var startInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = localFile,
+                        Arguments = "/quiet /norestart",
+                        UseShellExecute = true,
+                        Verb = "runas" // Run as admin
+                    };
+
+                    System.Diagnostics.Process.Start(startInfo);
+                    installed++;
+                }
+                catch (Exception ex)
+                {
+                    lblMainStatus.Text = $"Install failed for {fileName}: " + ex.Message;
+                    return;
+                }
+            }
+
+            lblMainStatus.Text = $"✓ Started installation for {installed} file(s).";
         }
 
         private void BtnBack_Click(object? sender, EventArgs e)

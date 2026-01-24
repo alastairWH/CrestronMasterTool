@@ -568,10 +568,10 @@ namespace CrestronMasterTool
             
             foreach (ListViewItem item in lvProducts!.Items)
             {
-                if (item.Checked && item.SubItems[1].Text != "(Select version)" && item.SubItems[1].Text != "No versions available")
+                if (item.Checked && item.SubItems[1].Text != "(Select version) ▼" && item.SubItems[1].Text != "No versions available")
                 {
                     string productName = (string)item.Tag!;
-                    string versionDisplay = item.SubItems[1].Text;
+                    string versionDisplay = item.SubItems[1].Text.Replace(" ▼", ""); // Remove dropdown arrow for lookup
                     
                     if (productVersions.ContainsKey(productName) && productVersions[productName].ContainsKey(versionDisplay))
                     {
@@ -656,6 +656,7 @@ namespace CrestronMasterTool
                     {
                         item.SubItems[2].Text = "✓ Done";
                         item.BackColor = System.Drawing.Color.LightGreen;
+                        item.Checked = false;
                         completed++;
                     }
                 }
@@ -719,7 +720,7 @@ namespace CrestronMasterTool
                 if (item.Checked && item.SubItems[2].Text == "✓ Done")
                 {
                     string productName = (string)item.Tag!;
-                    string versionDisplay = item.SubItems[1].Text;
+                    string versionDisplay = item.SubItems[1].Text.Replace(" ▼", ""); // Remove dropdown arrow for lookup
                     
                     if (productVersions.ContainsKey(productName) && productVersions[productName].ContainsKey(versionDisplay))
                     {
@@ -751,7 +752,7 @@ namespace CrestronMasterTool
                     var startInfo = new System.Diagnostics.ProcessStartInfo
                     {
                         FileName = localFile,
-                        Arguments = "/quiet /norestart",
+                        Arguments = "/SILENT /SUPPRESSMSGBOXES",
                         UseShellExecute = true,
                         Verb = "runas" // Run as admin
                     };

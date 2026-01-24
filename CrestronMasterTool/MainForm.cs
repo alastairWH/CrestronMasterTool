@@ -39,7 +39,7 @@ namespace CrestronMasterTool
         {
             this.Text = "Crestron Master Tool";
             this.Width = 700;
-            this.Height = 550;
+            this.Height = 580;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -202,24 +202,26 @@ namespace CrestronMasterTool
             {
                 Text = "",
                 Left = 30,
-                Top = 480,
-                Width = 620,
+                Top = 460,
+                Width = 400,
                 Height = 40,
                 ForeColor = System.Drawing.Color.DarkBlue,
                 Font = new System.Drawing.Font("Segoe UI", 9)
             };
 
-            btnBack = new Button
+            var btnLogout = new Button
             {
-                Text = "← Logout",
+                Text = "Logout",
                 Left = 30,
-                Top = 520,
-                Width = 100,
-                Height = 25,
+                Top = 505,
+                Width = 110,
+                Height = 30,
+                BackColor = System.Drawing.Color.FromArgb(220, 53, 69),
+                ForeColor = System.Drawing.Color.White,
                 FlatStyle = FlatStyle.Flat,
-                ForeColor = System.Drawing.Color.Gray
+                Font = new System.Drawing.Font("Segoe UI", 9, System.Drawing.FontStyle.Bold)
             };
-            btnBack.Click += BtnBack_Click;
+            btnLogout.Click += BtnBack_Click;
 
             mainPanel.Controls.Add(lblTypeTitle);
             mainPanel.Controls.Add(rbSoftware);
@@ -233,7 +235,7 @@ namespace CrestronMasterTool
             mainPanel.Controls.Add(downloadProgress);
             mainPanel.Controls.Add(lblFileSize);
             mainPanel.Controls.Add(lblMainStatus);
-            mainPanel.Controls.Add(btnBack);
+            mainPanel.Controls.Add(btnLogout);
 
             this.Controls.Add(mainPanel);
         }

@@ -11,19 +11,18 @@ namespace CrestronMasterTool
 {
     public class MainForm : Form
     {
-        private Panel loginPanel;
-        private Label lblTitle, lblHost, lblUsername, lblPassword, lblStatus;
-        private TextBox txtHost, txtUsername, txtPassword;
-        private Button btnLogin;
-        private PictureBox logoBox;
-        private Panel mainPanel;
+        private Panel? loginPanel;
+        private Label? lblTitle, lblHost, lblUsername, lblPassword, lblStatus;
+        private TextBox? txtHost, txtUsername, txtPassword;
+        private Button? btnLogin;
+        private Panel? mainPanel;
         private SftpClient? sftpClient;
-        private RadioButton rbSoftware, rbFirmware;
-        private ComboBox cmbProduct, cmbVersion;
-        private Label lblProduct, lblVersion;
-        private Button btnDownload, btnInstall, btnBack, btnCancel;
-        private ProgressBar downloadProgress;
-        private Label lblMainStatus, lblFileSize;
+        private RadioButton? rbSoftware, rbFirmware;
+        private ComboBox? cmbProduct, cmbVersion;
+        private Label? lblProduct, lblVersion;
+        private Button? btnDownload, btnInstall, btnBack, btnCancel;
+        private ProgressBar? downloadProgress;
+        private Label? lblMainStatus, lblFileSize;
         private System.Threading.CancellationTokenSource? cancelTokenSource;
         private Dictionary<string, List<string>> productFiles = new Dictionary<string, List<string>>();
         private Dictionary<string, string> productDisplayNames = new Dictionary<string, string>();
@@ -36,24 +35,13 @@ namespace CrestronMasterTool
         private void InitializeComponent()
         {
             this.Text = "Crestron Master Tool";
-            this.Width = 480;
-            this.Height = 340;
+            this.Width = 500;
+            this.Height = 380;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.StartPosition = FormStartPosition.CenterScreen;
 
             loginPanel = new Panel { Dock = DockStyle.Fill, BackColor = System.Drawing.Color.WhiteSmoke };
-
-            logoBox = new PictureBox
-            {
-                Left = 180,
-                Top = 18,
-                Width = 100,
-                Height = 50,
-                SizeMode = PictureBoxSizeMode.Zoom,
-                // Placeholder: logoBox.Image = ...
-                BackColor = System.Drawing.Color.LightGray
-            };
 
             lblTitle = new Label
             {
@@ -99,7 +87,6 @@ namespace CrestronMasterTool
                 Font = new System.Drawing.Font("Segoe UI", 9, System.Drawing.FontStyle.Italic)
             };
 
-            loginPanel.Controls.Add(logoBox);
             loginPanel.Controls.Add(lblTitle);
             loginPanel.Controls.Add(lblHost);
             loginPanel.Controls.Add(txtHost);
@@ -235,17 +222,17 @@ namespace CrestronMasterTool
 
         private async void BtnLogin_Click(object? sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtHost.Text))
+            if (string.IsNullOrWhiteSpace(txtHost!.Text))
             {
-                lblStatus.Text = "Please enter the SFTP host (e.g. sftp://ftp.crestron.com).";
+                lblStatus!.Text = "Please enter the SFTP host (e.g. sftp://ftp.crestron.com).";
                 return;
             }
 
-            btnLogin.Enabled = false;
-            lblStatus.ForeColor = System.Drawing.Color.Black;
+            btnLogin!.Enabled = false;
+            lblStatus!.ForeColor = System.Drawing.Color.Black;
             lblStatus.Text = "Connecting...";
 
-            string hostInput = txtHost.Text.Trim();
+            string hostInput = txtHost!.Text.Trim();
             int port = 22;
             if (hostInput.StartsWith("sftp://", StringComparison.OrdinalIgnoreCase))
                 hostInput = hostInput.Substring("sftp://".Length);
@@ -259,8 +246,8 @@ namespace CrestronMasterTool
                 if (int.TryParse(parts[1], out var p)) port = p;
             }
 
-            string username = txtUsername.Text.Trim();
-            string password = txtPassword.Text;
+            string username = txtUsername!.Text.Trim();
+            string password = txtPassword!.Text;
 
             await Task.Run(() =>
             {
@@ -276,9 +263,9 @@ namespace CrestronMasterTool
                     sftpClient = null;
                     this.Invoke(() =>
                     {
-                        lblStatus.ForeColor = System.Drawing.Color.DarkRed;
+                        lblStatus!.ForeColor = System.Drawing.Color.DarkRed;
                         lblStatus.Text = "Connection failed: " + ex.Message;
-                        btnLogin.Enabled = true;
+                        btnLogin!.Enabled = true;
                     });
                 }
             });
@@ -291,24 +278,24 @@ namespace CrestronMasterTool
             }
 
             // Connected
-            lblStatus.Text = string.Empty;
-            loginPanel.Visible = false;
-            mainPanel.Visible = true;
+            lblStatus!.Text = string.Empty;
+            loginPanel!.Visible = false;
+            mainPanel!.Visible = true;
 
             await LoadProductListAsync();
-            lblMainStatus.Text = "Connected to " + host + ". Select a product to continue.";
-            btnLogin.Enabled = true;
+            lblMainStatus!.Text = "Connected to " + host + ". Select a product to continue.";
+            btnLogin!.Enabled = true;
         }
 
         private async Task LoadProductListAsync()
         {
-            cmbProduct.Items.Clear();
-            cmbVersion.Items.Clear();
+            cmbProduct!.Items.Clear();
+            cmbVersion!.Items.Clear();
             productFiles.Clear();
             productDisplayNames.Clear();
 
-            string folderPath = rbSoftware.Checked ? "/software" : "/firmware";
-            lblMainStatus.Text = "Loading products...";
+            string folderPath = rbSoftware!.Checked ? "/software" : "/firmware";
+            lblMainStatus!.Text = "Loading products...";
 
             try
             {
@@ -360,7 +347,7 @@ namespace CrestronMasterTool
             if (sftpClient != null && sftpClient.IsConnected && ((RadioButton)sender!).Checked)
             {
                 // Hide Install button for firmware, show for software
-                btnInstall.Visible = rbSoftware.Checked;
+                btnInstall!.Visible = rbSoftware!.Checked;
                 
                 await LoadProductListAsync();
             }
@@ -368,14 +355,14 @@ namespace CrestronMasterTool
 
         private async void CmbProduct_SelectedIndexChanged(object? sender, EventArgs e)
         {
-            if (cmbProduct.SelectedItem == null) return;
+            if (cmbProduct!.SelectedItem == null) return;
 
-            cmbVersion.Items.Clear();
+            cmbVersion!.Items.Clear();
             string displayName = cmbProduct.SelectedItem.ToString()!;
             string productName = productDisplayNames[displayName];
-            string folderPath = (rbSoftware.Checked ? "/software/" : "/firmware/") + productName;
+            string folderPath = (rbSoftware!.Checked ? "/software/" : "/firmware/") + productName;
 
-            lblMainStatus.Text = "Loading versions for " + displayName + "...";
+            lblMainStatus!.Text = "Loading versions for " + displayName + "...";
 
             try
             {
@@ -446,32 +433,32 @@ namespace CrestronMasterTool
         {
             if (sftpClient == null || !sftpClient.IsConnected)
             {
-                lblMainStatus.Text = "Not connected.";
+                lblMainStatus!.Text = "Not connected.";
                 return;
             }
 
-            if (cmbProduct.SelectedItem == null || cmbVersion.SelectedIndex < 0)
+            if (cmbProduct!.SelectedItem == null || cmbVersion!.SelectedIndex < 0)
             {
-                lblMainStatus.Text = "Please select a product and version.";
+                lblMainStatus!.Text = "Please select a product and version.";
                 return;
             }
 
             string productName = cmbProduct.SelectedItem.ToString()!;
-            string remotePath = productFiles[productName][cmbVersion.SelectedIndex];
+            string remotePath = productFiles[productName][cmbVersion!.SelectedIndex];
             string fileName = Path.GetFileName(remotePath);
             string localFile = Path.Combine(Path.GetTempPath(), fileName);
 
-            btnDownload.Enabled = false;
-            btnInstall.Enabled = false;
-            btnCancel.Visible = true;
-            downloadProgress.Value = 0;
-            lblFileSize.Text = "";
+            btnDownload!.Enabled = false;
+            btnInstall!.Enabled = false;
+            btnCancel!.Visible = true;
+            downloadProgress!.Value = 0;
+            lblFileSize!.Text = "";
 
             cancelTokenSource?.Cancel();
             cancelTokenSource = new System.Threading.CancellationTokenSource();
             var token = cancelTokenSource.Token;
 
-            lblMainStatus.Text = "Downloading " + fileName + " ...";
+            lblMainStatus!.Text = "Downloading " + fileName + " ...";
 
             try
             {
@@ -540,7 +527,7 @@ namespace CrestronMasterTool
         private void BtnCancel_Click(object? sender, EventArgs e)
         {
             cancelTokenSource?.Cancel();
-            lblMainStatus.Text = "Cancelling download...";
+            lblMainStatus!.Text = "Cancelling download...";
         }
 
         private string FormatSpeed(double bytesPerSecond)
@@ -560,24 +547,24 @@ namespace CrestronMasterTool
 
         private void BtnInstall_Click(object? sender, EventArgs e)
         {
-            if (cmbProduct.SelectedItem == null || cmbVersion.SelectedIndex < 0)
+            if (cmbProduct!.SelectedItem == null || cmbVersion!.SelectedIndex < 0)
             {
-                lblMainStatus.Text = "Please select a product and version first.";
+                lblMainStatus!.Text = "Please select a product and version first.";
                 return;
             }
 
             string productName = cmbProduct.SelectedItem.ToString()!;
-            string remotePath = productFiles[productName][cmbVersion.SelectedIndex];
+            string remotePath = productFiles[productName][cmbVersion!.SelectedIndex];
             string fileName = Path.GetFileName(remotePath);
             string localFile = Path.Combine(Path.GetTempPath(), fileName);
 
             if (!File.Exists(localFile))
             {
-                lblMainStatus.Text = "File not downloaded yet. Please download first.";
+                lblMainStatus!.Text = "File not downloaded yet. Please download first.";
                 return;
             }
 
-            lblMainStatus.Text = "Starting silent install for " + fileName + " ...";
+            lblMainStatus!.Text = "Starting silent install for " + fileName + " ...";
 
             try
             {
@@ -600,8 +587,8 @@ namespace CrestronMasterTool
 
         private void BtnBack_Click(object? sender, EventArgs e)
         {
-            mainPanel.Visible = false;
-            loginPanel.Visible = true;
+            mainPanel!.Visible = false;
+            loginPanel!.Visible = true;
         }
     }
 }

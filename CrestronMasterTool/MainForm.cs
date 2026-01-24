@@ -20,7 +20,7 @@ namespace CrestronMasterTool
         private RadioButton? rbSoftware, rbFirmware;
         private TextBox? txtSearch;
         private ListView? lvProducts;
-        private Button? btnDownloadSelected, btnInstallSelected, btnBack, btnCancel;
+        private Button? btnDownloadSelected, btnInstallSelected, btnCancel;
         private ProgressBar? downloadProgress;
         private Label? lblMainStatus, lblFileSize;
         private System.Threading.CancellationTokenSource? cancelTokenSource;

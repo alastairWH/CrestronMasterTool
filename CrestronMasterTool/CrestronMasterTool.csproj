@@ -5,7 +5,14 @@
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>CrestronMasterTool</RootNamespace>
     <Nullable>enable</Nullable>
+
+    <PublishSingleFile>true</PublishSingleFile>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Renci.SshNet" Version="1.0.0" />
   </ItemGroup>

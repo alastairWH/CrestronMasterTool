@@ -49,29 +49,29 @@ namespace CrestronMasterTool
             lblTitle = new Label
             {
                 Text = "Crestron Master Tool",
-                Left = 120,
-                Top = 75,
-                Width = 250,
+                Left = 200,
+                Top = 150,
+                Width = 300,
                 Font = new System.Drawing.Font("Segoe UI", 14, System.Drawing.FontStyle.Bold),
                 TextAlign = System.Drawing.ContentAlignment.MiddleCenter
             };
 
-            lblHost = new Label { Text = "SFTP Host:", Left = 60, Top = 120, Width = 80, Visible = false };
-            txtHost = new TextBox { Left = 150, Top = 118, Width = 220, Text = "sftp://ftp.crestron.com", ReadOnly = true, BackColor = System.Drawing.SystemColors.ControlLight, Visible = false };
+            lblHost = new Label { Text = "SFTP Host:", Left = 190, Top = 210, Width = 80, Visible = false };
+            txtHost = new TextBox { Left = 280, Top = 208, Width = 220, Text = "sftp://ftp.crestron.com", ReadOnly = true, BackColor = System.Drawing.SystemColors.ControlLight, Visible = false };
 
-            lblUsername = new Label { Text = "Username:", Left = 60, Top = 120, Width = 80 };
-            txtUsername = new TextBox { Left = 150, Top = 118, Width = 220 };
+            lblUsername = new Label { Text = "Username:", Left = 190, Top = 210, Width = 80 };
+            txtUsername = new TextBox { Left = 280, Top = 208, Width = 220 };
             try { txtUsername.PlaceholderText = "Your username"; } catch { }
 
-            lblPassword = new Label { Text = "Password:", Left = 60, Top = 155, Width = 80 };
-            txtPassword = new TextBox { Left = 150, Top = 153, Width = 220, PasswordChar = '*' };
+            lblPassword = new Label { Text = "Password:", Left = 190, Top = 245, Width = 80 };
+            txtPassword = new TextBox { Left = 280, Top = 243, Width = 220, PasswordChar = '*' };
             try { txtPassword.PlaceholderText = "Your password"; } catch { }
 
             btnLogin = new Button
             {
                 Text = "Login",
-                Left = 150,
-                Top = 195,
+                Left = 280,
+                Top = 285,
                 Width = 220,
                 Height = 32,
                 BackColor = System.Drawing.Color.FromArgb(0, 120, 215),
@@ -83,11 +83,34 @@ namespace CrestronMasterTool
             lblStatus = new Label
             {
                 Text = "",
-                Left = 60,
-                Top = 235,
+                Left = 190,
+                Top = 325,
                 Width = 310,
                 ForeColor = System.Drawing.Color.DarkRed,
                 Font = new System.Drawing.Font("Segoe UI", 9, System.Drawing.FontStyle.Italic)
+            };
+
+            var lblGithub = new LinkLabel
+            {
+                Text = "https://github.com/alastairWH/CrestronMasterTool",
+                Left = 175,
+                Top = 520,
+                Width = 350,
+                Font = new System.Drawing.Font("Segoe UI", 9),
+                TextAlign = System.Drawing.ContentAlignment.MiddleCenter,
+                LinkColor = System.Drawing.Color.FromArgb(0, 120, 215)
+            };
+            lblGithub.LinkClicked += (s, e) =>
+            {
+                try
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "https://github.com/alastairWH/CrestronMasterTool",
+                        UseShellExecute = true
+                    });
+                }
+                catch { }
             };
 
             loginPanel.Controls.Add(lblTitle);
@@ -99,6 +122,7 @@ namespace CrestronMasterTool
             loginPanel.Controls.Add(txtPassword);
             loginPanel.Controls.Add(btnLogin);
             loginPanel.Controls.Add(lblStatus);
+            loginPanel.Controls.Add(lblGithub);
 
             this.Controls.Add(loginPanel);
 

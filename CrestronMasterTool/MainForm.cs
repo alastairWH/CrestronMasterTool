@@ -62,10 +62,12 @@ namespace CrestronMasterTool
             lblUsername = new Label { Text = "Username:", Left = 190, Top = 210, Width = 80 };
             txtUsername = new TextBox { Left = 280, Top = 208, Width = 220 };
             try { txtUsername.PlaceholderText = "Your username"; } catch { }
+            txtUsername.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; btnLogin!.PerformClick(); } };
 
             lblPassword = new Label { Text = "Password:", Left = 190, Top = 245, Width = 80 };
             txtPassword = new TextBox { Left = 280, Top = 243, Width = 220, PasswordChar = '*' };
             try { txtPassword.PlaceholderText = "Your password"; } catch { }
+            txtPassword.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; btnLogin!.PerformClick(); } };
 
             btnLogin = new Button
             {

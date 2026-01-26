@@ -37,12 +37,12 @@ namespace CrestronMasterTool
 
         private void InitializeComponent()
         {
-            this.Text = "Crestron Master Tool";
-            this.Width = 700;
-            this.Height = 580;
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
-            this.StartPosition = FormStartPosition.CenterScreen;
+            Text = "Crestron Master Tool";
+            Width = 700;
+            Height = 580;
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false;
+            StartPosition = FormStartPosition.CenterScreen;
 
             loginPanel = new Panel { Dock = DockStyle.Fill, BackColor = System.Drawing.Color.WhiteSmoke };
 
@@ -126,7 +126,7 @@ namespace CrestronMasterTool
             loginPanel.Controls.Add(lblStatus);
             loginPanel.Controls.Add(lblGithub);
 
-            this.Controls.Add(loginPanel);
+            Controls.Add(loginPanel);
 
             // MAIN PANEL (hidden until login)
             mainPanel = new Panel { Dock = DockStyle.Fill, Visible = false, BackColor = System.Drawing.Color.White };
@@ -263,7 +263,7 @@ namespace CrestronMasterTool
             mainPanel.Controls.Add(lblMainStatus);
             mainPanel.Controls.Add(btnLogout);
 
-            this.Controls.Add(mainPanel);
+            Controls.Add(mainPanel);
         }
 
         private async void BtnLogin_Click(object? sender, EventArgs e)
@@ -307,7 +307,7 @@ namespace CrestronMasterTool
                 catch (Exception ex)
                 {
                     sftpClient = null;
-                    this.Invoke(() =>
+                    Invoke(() =>
                     {
                         lblStatus!.ForeColor = System.Drawing.Color.DarkRed;
                         lblStatus.Text = "Connection failed: " + ex.Message;
@@ -645,7 +645,7 @@ namespace CrestronMasterTool
                                 double speed = totalRead / elapsed.TotalSeconds;
                                 double remaining = (fileSize - (long)totalRead) / speed;
                                 
-                                this.Invoke(() =>
+                                Invoke(() =>
                                 {
                                     downloadProgress!.Value = Math.Min(100, percent);
                                     lblFileSize!.Text = $"[{completed + 1}/{itemsToDownload.Count}] {fileName}: {FormatSize((long)totalRead)} / {FormatSize(fileSize)} ({FormatSpeed(speed)}) - ETA: {FormatTime(remaining)}";

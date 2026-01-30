@@ -20,25 +20,26 @@ namespace CrestronMasterTool
 
             foreach (string keyPath in registryKeys)
             {
-                using (RegistryKey key = Registry.LocalMachine.OpenSubKey(keyPath))
+                using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(keyPath))
                 {
                     if (key == null) continue;
                     foreach (string subkeyName in key.GetSubKeyNames())
                     {
-                        using (RegistryKey subkey = key.OpenSubKey(subkeyName))
+                        using (RegistryKey? subkey = key.OpenSubKey(subkeyName))
                         {
-                            string name = subkey.GetValue("DisplayName") as string;
-                            string version = subkey.GetValue("DisplayVersion") as string;
-                            string publisher = subkey.GetValue("Publisher") as string;
-                            string uninstallString = subkey.GetValue("UninstallString") as string;
+                            if (subkey == null) continue;
+                            string? name = subkey.GetValue("DisplayName") as string;
+                            string? version = subkey.GetValue("DisplayVersion") as string;
+                            string? publisher = subkey.GetValue("Publisher") as string;
+                            string? uninstallString = subkey.GetValue("UninstallString") as string;
                             if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(publisher) && publisher.ToLower().Contains("crestron"))
                             {
                                 result.Add(new InstalledSoftware
                                 {
                                     Name = name,
-                                    Version = version,
-                                    Publisher = publisher,
-                                    UninstallString = uninstallString,
+                                    Version = version ?? string.Empty,
+                                    Publisher = publisher ?? string.Empty,
+                                    UninstallString = uninstallString ?? string.Empty,
                                     Status = "Update available"
                                 });
                             }
@@ -54,9 +55,14 @@ namespace CrestronMasterTool
         {
             try
             {
-                using (var client = new WebClient())
+                using (var client = new System.Net.Http.HttpClient())
+                using (var response = client.GetAsync(url).Result)
                 {
-                    client.DownloadFile(url, destinationPath);
+                    response.EnsureSuccessStatusCode();
+                    using (var fs = System.IO.File.Create(destinationPath))
+                    {
+                        response.Content.CopyToAsync(fs).Wait();
+                    }
                 }
                 return true;
             }
@@ -87,10 +93,10 @@ namespace CrestronMasterTool
 
     public class InstalledSoftware
     {
-        public string Name { get; set; }
-        public string Version { get; set; }
-        public string Publisher { get; set; }
-        public string UninstallString { get; set; }
-        public string Status { get; set; } // e.g. "Update available"
+        public required string Name { get; set; }
+        public required string Version { get; set; }
+        public required string Publisher { get; set; }
+        public required string UninstallString { get; set; }
+        public required string Status { get; set; } // e.g. "Update available"
     }
 }

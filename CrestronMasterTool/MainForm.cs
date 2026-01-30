@@ -352,9 +352,7 @@ namespace CrestronMasterTool
                 {
                     string displayName = FormatProductName(product.Name);
                     productDisplayNames[displayName] = product.Name;
-                    
                     // Don't load versions upfront - do it on demand when user clicks
-                    
                     // Add to ListView
                     var item = new ListViewItem(displayName);
                     item.SubItems.Add("(Select version) ▼");
@@ -363,6 +361,9 @@ namespace CrestronMasterTool
                     allProductItems.Add(item);
                     lvProducts.Items.Add(item);
                 }
+
+                // Update UI with installed software status
+                InstalledSoftwareHelper.UpdateInstalledSoftwareStatus(lvProducts, productDisplayNames, productVersions);
 
                 if (lvProducts.Items.Count > 0)
                 {

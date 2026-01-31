@@ -14,6 +14,7 @@ namespace CrestronMasterTool
         private Label? lblTitle, lblHost, lblUsername, lblPassword, lblStatus;
         private TextBox? txtHost, txtUsername, txtPassword;
         private Button? btnLogin;
+        private CheckBox? chkRememberMe;
         private Panel? mainPanel;
         private SftpClient? sftpClient;
         private RadioButton? rbSoftware, rbFirmware;
@@ -32,6 +33,12 @@ namespace CrestronMasterTool
         public MainForm()
         {
             InitializeComponent();
+            // Try to load saved credentials
+            var (savedUser, savedPass) = CredentialManager.LoadCredentials();
+            if (!string.IsNullOrEmpty(savedUser)) txtUsername!.Text = savedUser;
+            if (!string.IsNullOrEmpty(savedPass)) txtPassword!.Text = savedPass;
+            if (!string.IsNullOrEmpty(savedUser) && !string.IsNullOrEmpty(savedPass))
+                chkRememberMe!.Checked = true;
         }
 
         private void InitializeComponent()
@@ -67,6 +74,15 @@ namespace CrestronMasterTool
             txtPassword = new TextBox { Left = 280, Top = 243, Width = 220, PasswordChar = '*' };
             try { txtPassword.PlaceholderText = "Your password"; } catch { }
             txtPassword.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; btnLogin!.PerformClick(); } };
+
+            chkRememberMe = new CheckBox
+            {
+                Text = "Remember Me",
+                Left = 280,
+                Top = 273,
+                Width = 220,
+                Height = 18
+            };
 
             btnLogin = new Button
             {
@@ -121,6 +137,7 @@ namespace CrestronMasterTool
             loginPanel.Controls.Add(txtUsername);
             loginPanel.Controls.Add(lblPassword);
             loginPanel.Controls.Add(txtPassword);
+            loginPanel.Controls.Add(chkRememberMe);
             loginPanel.Controls.Add(btnLogin);
             loginPanel.Controls.Add(lblStatus);
             loginPanel.Controls.Add(lblGithub);
@@ -314,6 +331,19 @@ namespace CrestronMasterTool
                     });
                 }
             });
+
+            // Save or clear credentials based on Remember Me
+            if (sftpClient != null && sftpClient.IsConnected)
+            {
+                if (chkRememberMe!.Checked)
+                {
+                    CredentialManager.SaveCredentials(username, password);
+                }
+                else
+                {
+                    CredentialManager.ClearCredentials();
+                }
+            }
 
             if (sftpClient == null || !sftpClient.IsConnected)
             {

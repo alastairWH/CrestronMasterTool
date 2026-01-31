@@ -15,14 +15,12 @@ namespace CrestronMasterTool
             var userBytes = Encoding.UTF8.GetBytes(username);
             var passBytes = Encoding.UTF8.GetBytes(password);
             var encryptedPass = ProtectedData.Protect(passBytes, null, DataProtectionScope.CurrentUser);
-            using (var fs = new FileStream(credFile, FileMode.Create, FileAccess.Write))
-            using (var bw = new BinaryWriter(fs))
-            {
-                bw.Write(userBytes.Length);
-                bw.Write(userBytes);
-                bw.Write(encryptedPass.Length);
-                bw.Write(encryptedPass);
-            }
+            using var fs = new FileStream(credFile, FileMode.Create, FileAccess.Write);
+            using var bw = new BinaryWriter(fs);
+            bw.Write(userBytes.Length);
+            bw.Write(userBytes);
+            bw.Write(encryptedPass.Length);
+            bw.Write(encryptedPass);
         }
 
         public static (string? username, string? password) LoadCredentials()

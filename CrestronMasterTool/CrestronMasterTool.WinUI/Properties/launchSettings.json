@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "CrestronMasterTool.WinUI (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "CrestronMasterTool.WinUI (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

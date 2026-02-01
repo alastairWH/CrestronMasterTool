@@ -154,6 +154,9 @@ public sealed partial class BrowsePage : Page
                 {
                     Progress.Value = p.percent;
                     FooterStatus.Text = $"{fileName} • {p.percent}%";
+                    double mb = p.bytesTransferred / 1024.0 / 1024.0;
+                    double totalMb = p.totalBytes / 1024.0 / 1024.0;
+                    DownloadMBStatus.Text = $"{mb:F2} MB / {totalMb:F2} MB";
                 });
 
                 await client.DownloadFileAsync(remote, localFile, progress, downloadCts.Token);
@@ -164,14 +167,17 @@ public sealed partial class BrowsePage : Page
             }
 
             FooterStatus.Text = $"Downloaded {completed} file(s) to Downloads.";
+            DownloadMBStatus.Text = string.Empty;
         }
         catch (OperationCanceledException)
         {
             FooterStatus.Text = "Download cancelled.";
+            DownloadMBStatus.Text = string.Empty;
         }
         catch (Exception ex)
         {
             FooterStatus.Text = "Download failed: " + ex.Message;
+            DownloadMBStatus.Text = string.Empty;
         }
         finally
         {
